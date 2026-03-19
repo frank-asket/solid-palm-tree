@@ -30,12 +30,13 @@ def compute_insights(transactions: list[Transaction]) -> dict[str, Any]:
         health = "Add income and expenses to see your financial picture."
     elif savings < 0:
         health = "⚠️ You are spending more than you earn. Try to reduce expenses or increase income."
+    elif savings == 0:
+        health = "✅ You're breaking even. Try to save a little more when possible."
     elif savings_rate >= 20:
         health = "✅ You're saving well. Keep it up!"
-    elif savings_rate > 0:
-        health = "✅ You're saving a bit. Consider increasing savings when possible."
     else:
-        health = "⚠️ You are spending more than you earn."
+        # savings > 0 but rate is small (or rounded to 0.0)
+        health = "✅ You're saving a bit. Consider increasing savings when possible."
 
     return {
         "total_income": round(total_income, 2),

@@ -41,9 +41,14 @@ async def handle_webhook(request: Request, db: Session = Depends(get_db)):
             for change in entry.get("changes", []):
                 value = change.get("value", {})
                 messages = value.get("messages", [])
-                # Sender wa_id is in each message's "from"
                 for msg in messages:
+                    # Sender wa_id is usually in msg["from"], but guard against missing payload fields.
                     from_id = msg.get("from")
+                    if not from_id:
+                        contacts = value.get("contacts") or []
+                        from_id = contacts[0].get("wa_id") if contacts else None
+                    if not from_id:
+                        continue
                     if msg.get("type") != "text":
                         send_text_message(from_id, "Please send a text message (e.g. 'I spent 50 on food' or 'Got 200 from salary').")
                         continue
