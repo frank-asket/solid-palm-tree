@@ -1,262 +1,235 @@
-:::writing{variant=“standard” id=“dje02”}
+# DjÊ Backend 🚀
 
-DjÊ Backend 🚀
+DjÊ is a WhatsApp-first AI financial assistant that helps people track money using natural language, understand spending behavior, and get practical insights they can act on.
 
-Overview
+## ✨ What DjÊ Does
 
-DjÊ is a WhatsApp-based AI financial assistant designed to help users:
-	•	Track income and expenses using natural language
-	•	Understand their financial habits
-	•	Receive simple, actionable insights
-	•	Improve money management over time
+- Tracks income and expenses from plain text messages (for example: `I spent 50 on food`)
+- Stores transactions per user (phone number identity)
+- Generates simple financial summaries and health signals
+- Replies directly in WhatsApp with a concise, user-friendly analysis
 
-This repository contains the production-ready backend powering DjÊ.
+## 🧱 Tech Stack
 
-⸻
+- **FastAPI**: web framework and webhook endpoints
+- **PostgreSQL + SQLAlchemy**: persistent storage and data modeling
+- **OpenAI API**: structured extraction of financial intent from text
+- **WhatsApp Cloud API**: user communication channel
+- **Uvicorn**: ASGI server for local/dev deployment
 
-🧱 Tech Stack
-	•	FastAPI – Backend framework
-	•	PostgreSQL – Database
-	•	OpenAI API – AI processing (data extraction & insights)
-	•	WhatsApp Cloud API – User interface
+## 🗂️ Project Structure
 
-⸻
-
-📁 Project Structure
-
+```text
 app/
-│
-├── main.py                # App entry point
-│
+├── main.py                     # FastAPI app entry point
 ├── core/
-│   ├── config.py         # Environment config
-│   └── deps.py           # Dependency injection (DB)
-│
+│   ├── config.py               # Environment loading and settings
+│   └── deps.py                 # Dependency injection (DB session)
 ├── models/
-│   ├── database.py       # DB connection
-│   ├── user.py           # User model
-│   └── transaction.py    # Transaction model
-│
+│   ├── database.py             # SQLAlchemy engine/session/base
+│   ├── user.py                 # User model (phone identity)
+│   └── transaction.py          # Transaction model (income/expense)
 ├── routes/
-│   └── whatsapp.py       # Webhook endpoints
-│
+│   └── whatsapp.py             # WhatsApp webhook (GET verify, POST events)
 ├── services/
-│   ├── ai_service.py     # AI extraction logic
-│   ├── transaction_service.py
-│   └── insight_service.py
-│
-├── utils/
-│   └── whatsapp.py       # WhatsApp API sender
+│   ├── ai_service.py           # NLP extraction logic (OpenAI + fallback)
+│   ├── transaction_service.py  # User/transaction data operations
+│   └── insight_service.py      # Financial metrics and health messaging
+└── utils/
+    └── whatsapp.py             # WhatsApp API sender utility
 
+init_db.py                      # DB table initialization script
+requirements.txt                # Python dependencies
+README.md
+```
 
-⸻
+## ⚙️ Prerequisites
 
-⚙️ Setup Instructions
+- Python 3.11+ recommended
+- PostgreSQL running locally or hosted
+- Meta Developer app with WhatsApp Cloud API enabled
+- OpenAI API key
 
-1. Clone the Repository
+## 🚀 Quick Start
 
+### 1) Clone and enter project
+
+```bash
 git clone <your-repo-url>
-cd dje-backend
+cd solid-palm-tree
+```
 
+### 2) Create and activate virtual environment
 
-⸻
+```bash
+python3 -m venv .venv
+source .venv/bin/activate        # macOS/Linux
+# .venv\Scripts\activate       # Windows PowerShell
+```
 
-2. Create Virtual Environment
+### 3) Install dependencies
 
-python -m venv venv
-source venv/bin/activate   # Mac/Linux
-venv\Scripts\activate      # Windows
-
-
-⸻
-
-3. Install Dependencies
-
+```bash
 pip install -r requirements.txt
+```
 
+### 4) Configure environment
 
-⸻
+Create `.env` in project root (or copy from `.env.example`):
 
-🔐 Environment Variables
-
-Create a .env file in the root:
-
+```env
 OPENAI_API_KEY=your_openai_key
 WHATSAPP_TOKEN=your_whatsapp_token
 PHONE_NUMBER_ID=your_phone_number_id
 VERIFY_TOKEN=your_verify_token
 DATABASE_URL=postgresql://user:password@localhost/dje
+```
 
+### 5) Initialize database
 
-⸻
-
-🗄️ Database Setup
-
-Make sure PostgreSQL is running.
-
-Create database:
-
+```sql
 CREATE DATABASE dje;
+```
 
-Initialize tables:
+```bash
+python3 init_db.py
+```
 
-python init_db.py
+### 6) Run the API
 
-
-⸻
-
-▶️ Run the Server
-
+```bash
 uvicorn app.main:app --reload
+```
 
-Server runs on:
+Server:
 
-http://127.0.0.1:8000
+- `http://127.0.0.1:8000/`
+- `http://127.0.0.1:8000/health`
 
+## 🔗 WhatsApp Webhook Setup
 
-⸻
+To receive WhatsApp events locally, expose your server (for example with ngrok):
 
-🌐 Expose Local Server (for WhatsApp)
-
-Use ngrok:
-
+```bash
 ngrok http 8000
+```
 
-Copy the HTTPS URL and use it for webhook configuration.
+Use the HTTPS URL for your webhook in Meta:
 
-⸻
+- **Callback URL**: `https://<ngrok-url>/webhook`
+- **Verify token**: same value as `VERIFY_TOKEN` in `.env`
 
-📱 WhatsApp Integration
-	1.	Create a Meta Developer App
-	2.	Add WhatsApp product
-	3.	Configure webhook:
+Subscribe to event fields such as:
 
-https://your-ngrok-url/webhook
+- `messages`
+- `message_status`
 
-	4.	Set your VERIFY_TOKEN
-	5.	Subscribe to:
-	•	messages
-	•	message_status
+## 🔄 End-to-End Flow
 
-⸻
+1. User sends a WhatsApp text message.
+2. Meta forwards the webhook payload to `POST /webhook`.
+3. Backend extracts transaction intent (`income`/`expense`, amount, category, note).
+4. Transaction is saved to PostgreSQL under the correct user.
+5. Insight service computes totals, savings, and health message.
+6. A reply is sent back to the user via WhatsApp Cloud API.
 
-🔁 How It Works
-	1.	User sends a message via WhatsApp
-	2.	Webhook receives message
-	3.	AI extracts structured financial data
-	4.	Transaction is saved in database
-	5.	Analytics engine computes insights
-	6.	Response is sent back to user
+## 🧠 AI Extraction Behavior
 
-⸻
+DjÊ uses deterministic extraction with validation:
 
-🧠 AI System
-
-DjÊ uses structured AI processing:
-	•	Deterministic extraction (temperature = 0)
-	•	JSON-only outputs
-	•	Validation layer for accuracy
-	•	Fallback handling for errors
+- Model temperature set to `0`
+- JSON-first extraction contract
+- Runtime validation of type and amount
+- Regex fallback when model output/API is unavailable
 
 Example:
 
-Input:
+**Input**
 
-"I spent 50 on food"
+```text
+I spent 50 on food
+```
 
-Output:
+**Structured output**
 
+```json
 {
   "type": "expense",
   "amount": 50,
-  "category": "food"
+  "category": "food",
+  "note": null
 }
+```
 
+## 📊 Insights Engine
 
-⸻
+Current computed signals include:
 
-📊 Features (MVP)
-	•	✅ Expense tracking
-	•	✅ Income tracking
-	•	✅ Basic financial insights
-	•	✅ WhatsApp-based interaction
+- Total income
+- Total expenses
+- Savings (`income - expenses`)
+- Savings rate (%)
+- Expense category breakdown
+- Health message (negative / break-even / positive saving)
 
-⸻
+Typical response summary:
 
-📈 Analytics Engine
+```text
+📊 Summary
+Income: 1200.0
+Expenses: 900.0
+Savings: 300.0 (25.0%)
+✅ You're saving well. Keep it up!
+```
 
-DjÊ computes:
-	•	Total income vs expenses
-	•	Category breakdown
-	•	Savings estimation
-	•	Basic financial health insights
+## 🧪 Testing and Validation Tips
 
-Example insight:
+- Run import sanity checks with your virtual environment Python
+- Verify health endpoint (`GET /health`)
+- Send sample webhook payloads to `POST /webhook`
+- Confirm records are inserted into `users` and `transactions`
+- Validate WhatsApp response delivery in Meta logs
 
-⚠️ You are spending more than you earn.
+## 🔐 Security and Reliability Notes
 
+- Phone number (`wa_id`) is the user identity key
+- Secrets are loaded via environment variables, not hardcoded
+- Non-text messages are safely handled
+- Missing sender IDs are guarded to avoid runtime crashes
+- Webhook verification token must match exactly in Meta and `.env`
 
-⸻
+## ⚠️ Current MVP Limitations
 
-🔐 Security
-	•	Phone number = unique user identity
-	•	No cross-user data access
-	•	Environment-based secrets
-	•	Input validation to prevent corruption
+- Category understanding is basic
+- Single-currency assumptions
+- No budgets/goals engine yet
+- No advanced forecasting/investment models yet
+- Basic operational logging (can be expanded)
 
-⸻
+## 🗺️ Roadmap
 
-⚠️ Known Limitations (MVP)
-	•	Limited category detection
-	•	No multi-currency support yet
-	•	No advanced investment logic yet
-	•	Basic insight engine
+- Richer trend analytics and monthly comparisons
+- Budget recommendations and alerts
+- Voice-note transaction parsing
+- Multi-language and locale-aware formatting
+- Better observability (structured logs, metrics, tracing)
+- Automated tests for webhook and services
 
-⸻
+## 👩‍💻 Development Principles
 
-🚀 Roadmap
-	•	Advanced analytics (trends, forecasts)
-	•	Investment recommendations
-	•	Voice message support
-	•	Multi-language support
-	•	Agent-based workflows (future upgrade)
+- Keep business logic in `services`, not route handlers
+- Keep extraction prompts strict and parseable
+- Validate all AI outputs before persistence
+- Prefer safe fallbacks over hard failures
+- Optimize for trust and clarity in user-facing messages
 
-⸻
+## 📬 Contact
 
-💡 Vision
+- **Project**: DjÊ
+- **Organization**: Klingbo Intelligence
 
-DjÊ is not just a chatbot.
+## 💡 Vision
 
-It is:
+DjÊ aims to be more than a chatbot: a lightweight financial intelligence layer in a channel people already use every day.
 
-A financial intelligence layer that helps people understand, control, and grow their money — starting from WhatsApp.
-
-⸻
-
-👨‍💻 Development Notes
-	•	Keep logic in services, not routes
-	•	Keep AI prompts minimal and structured
-	•	Always validate AI outputs
-	•	Prioritize user trust over complexity
-
-⸻
-
-📬 Contact
-
-For questions or collaboration:
-	•	Project: DjÊ
-	•	Built under: Klingbo Intelligence
-
-⸻
-
-⭐ Final Note
-
-Start small.
-Ship fast.
-Learn from real users.
-
-Then scale intelligently.
-
-⸻
-
-:::
+Start simple. Ship quickly. Learn from users. Scale with confidence.
